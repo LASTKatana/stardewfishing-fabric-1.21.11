@@ -1,13 +1,10 @@
 package com.kltyton.stardewfishingFabric.common;
 
-import com.kltyton.stardewfishingFabric.common.networking.S2CStartMinigamePacket;
 import com.kltyton.stardewfishingFabric.common.networking.SFNetworking;
 import com.kltyton.stardewfishingFabric.server.FishBehaviorReloadListener;
-import io.netty.buffer.Unpooled;
 import koala.fishingreal.FishingReal;
 import net.fabricmc.loader.api.FabricLoader;
 import net.jobsaddon.jobs.JobHelper;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.tags.ItemTags;
@@ -17,22 +14,24 @@ import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.item.ItemStack;
 
 public class FishingHookLogic {
+
     public static void startMinigame(ServerPlayer player, ItemStack item) {
+        System.out.println("DEBUG: startMinigame called");
         if (player.fishing == null) {
+            System.out.println("DEBUG: player.fishing is null");
             return;
         }
         FishBehavior behavior = FishBehaviorReloadListener.getBehavior(item);
+        System.out.println("DEBUG: behavior = " + behavior);
         if (behavior != null) {
-            S2CStartMinigamePacket packet = new S2CStartMinigamePacket(behavior);
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-            packet.encode(buf);
-            SFNetworking.sendToPlayer(player, buf);
+            SFNetworking.sendToPlayer(player, behavior);
+            System.out.println("DEBUG: packet sent");
         }
     }
 
     // 结束迷你游戏
     public static boolean endMinigame(ServerPlayer player, boolean success, double accuracy, FishingHook hook, ItemStack items) {
-        if (success && !player.level().isClientSide) {
+        if (success && !player.level().isClientSide()) {
             ItemEntity itemEntity = new ItemEntity(hook.level(), hook.getX(), hook.getY(), hook.getZ(), items);
             double d = player.getX() - hook.getX();
             double e = player.getY() - hook.getY();

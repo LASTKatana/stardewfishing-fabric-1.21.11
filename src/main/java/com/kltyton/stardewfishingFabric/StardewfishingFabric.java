@@ -7,7 +7,7 @@ import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
@@ -17,8 +17,8 @@ public class StardewfishingFabric implements ModInitializer {
         常量定义
     */
     public static final String MODID = "stardew_fishing";
-    public static final ResourceKey<Registry<SoundEvent>> SOUND_EVENT_REGISTRY_KEY = ResourceKey.createRegistryKey(new ResourceLocation(MODID, "sound_events"));
-    public static final TagKey<Item> STARTS_MINIGAME = TagKey.create(BuiltInRegistries.ITEM.key(), new ResourceLocation(MODID, "starts_minigame"));
+    public static final ResourceKey<Registry<SoundEvent>> SOUND_EVENT_REGISTRY_KEY = ResourceKey.createRegistryKey(Identifier.fromNamespaceAndPath(MODID, "sound_events"));
+    public static final TagKey<Item> STARTS_MINIGAME = TagKey.create(BuiltInRegistries.ITEM.key(), Identifier.fromNamespaceAndPath(MODID, "starts_minigame"));
     public static final Registry<SoundEvent> SOUND_EVENTS = FabricRegistryBuilder.createSimple(SOUND_EVENT_REGISTRY_KEY).buildAndRegister();
     /*
         声音事件定义
@@ -50,14 +50,14 @@ public class StardewfishingFabric implements ModInitializer {
         registerSoundEvent("reel_fast", REEL_FAST);
         registerSoundEvent("reel_slow", REEL_SLOW);
     }
+
     // 创建新的声音事件
     private static SoundEvent registerSound(String name) {
-        ResourceLocation id = new ResourceLocation(MODID, name);
+        Identifier id = Identifier.fromNamespaceAndPath(MODID, name);
         return SoundEvent.createVariableRangeEvent(id);
     }
 
     private static void registerSoundEvent(String name, SoundEvent soundEvent) {
-        // 将声音事件注册到注册表
-        Registry.register(SOUND_EVENTS, new ResourceLocation(MODID, name), soundEvent);
+        Registry.register(SOUND_EVENTS, Identifier.fromNamespaceAndPath(MODID, name), soundEvent);
     }
 }

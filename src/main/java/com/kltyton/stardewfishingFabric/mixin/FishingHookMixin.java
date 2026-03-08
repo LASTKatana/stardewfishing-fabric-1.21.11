@@ -22,25 +22,39 @@ import java.util.List;
 
 @Mixin(FishingHook.class)
 public abstract class FishingHookMixin {
-    @Inject(method = "retrieve", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/item/ItemEntity;<init>(Lnet/minecraft/world/level/Level;DDDLnet/minecraft/world/item/ItemStack;)V"), locals = LocalCapture.CAPTURE_FAILSOFT, cancellable = true)
+
+    @Inject(
+            method = "retrieve",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/item/ItemEntity;<init>(Lnet/minecraft/world/level/Level;DDDLnet/minecraft/world/item/ItemStack;)V"),
+            locals = LocalCapture.CAPTURE_FAILSOFT,
+            cancellable = true
+    )
     public void retrieve(ItemStack stack, CallbackInfoReturnable<Integer> cir, Player player, int i, LootParams lootParams, LootTable lootTable, List list, Iterator var7, ItemStack items) {
+        System.out.println("DEBUG: retrieve mixin fired, item = " + items);
+
         FishingHook hook = (FishingHook) (Object) this;
         ServerPlayer serverPlayer = (ServerPlayer) hook.getPlayerOwner();
-        if (serverPlayer == null) return;
+        if (serverPlayer == null) {
+            System.out.println("DEBUG: serverPlayer is null, returning");
+            return;
+        }
+
+        System.out.println("DEBUG: item tag check = " + items.is(StardewfishingFabric.STARTS_MINIGAME));
+
         if (items.is(StardewfishingFabric.STARTS_MINIGAME)) {
-            boolean success = false;
-            double accuracy = 0.0;
+            System.out.println("DEBUG: starting minigame");
             FishingDataStorage.storeData(serverPlayer, hook, items);
             FishingHookLogic.startMinigame(serverPlayer, items);
-            boolean minigameSuccess = FishingHookLogic.endMinigame(serverPlayer, success, accuracy, hook, items);
-            if (!minigameSuccess) {
-                cir.cancel();
-            }
+            cir.setReturnValue(1);
+            cir.cancel();
         }
     }
 
-    @Redirect(method = "catchingFish", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/FishingHook;playSound(Lnet/minecraft/sounds/SoundEvent;FF)V"))
+    @Redirect(
+            method = "catchingFish",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/FishingHook;playSound(Lnet/minecraft/sounds/SoundEvent;FF)V")
+    )
     private void redirectPlaySound(FishingHook instance, SoundEvent soundEvent, float v, float x) {
-        instance.playSound(StardewfishingFabric.FISH_BITE,1.0F, 1.0F);
+        instance.playSound(StardewfishingFabric.FISH_BITE, 1.0F, 1.0F);
     }
 }

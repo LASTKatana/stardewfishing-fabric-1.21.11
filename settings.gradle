@@ -1,9 +1,14 @@
 pluginManagement {
     repositories {
-        maven {
-            name = 'Fabric'
-            url = 'https://maven.fabricmc.net/'
-        }
-        gradlePluginPortal()
+        maven { url 'https://maven.fabricmc.net/' } // Loom plugin
+        gradlePluginPortal()                        // Gradle plugins
+        mavenCentral()                              // Other dependencies
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven { url 'https://maven.fabricmc.net/' }
     }
 }

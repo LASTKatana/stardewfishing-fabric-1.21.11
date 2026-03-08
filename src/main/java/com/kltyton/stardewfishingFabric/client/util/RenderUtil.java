@@ -1,91 +1,57 @@
 package com.kltyton.stardewfishingFabric.client.util;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Axis;
+
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FastColor;
-import org.joml.Matrix4f;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
+import org.joml.Matrix3x2fStack;
 
 public class RenderUtil {
-    public static void blitF(GuiGraphics guiGraphics, ResourceLocation texture, float x, float y, int uOffset, int vOffset, int uWidth, int vHeight) {
-        float maxX = x + uWidth;
-        float maxY = y + vHeight;
-        float minU = uOffset / 256F;
-        float minV = vOffset / 256F;
-        float maxU = (uOffset + uWidth) / 256F;
-        float maxV = (vOffset + vHeight) / 256F;
-        
-        RenderSystem.setShaderTexture(0, texture);
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        Matrix4f matrix4f = guiGraphics.pose().last().pose();
-        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(matrix4f, x, y, 0).uv(minU, minV).endVertex();
-        bufferbuilder.vertex(matrix4f, x, maxY, 0).uv(minU, maxV).endVertex();
-        bufferbuilder.vertex(matrix4f, maxX, maxY, 0).uv(maxU, maxV).endVertex();
-        bufferbuilder.vertex(matrix4f, maxX, y, 0).uv(maxU, minV).endVertex();
-        BufferUploader.drawWithShader(bufferbuilder.end());
+
+    public static void blitF(GuiGraphics guiGraphics, Identifier texture, float x, float y, int uOffset, int vOffset, int uWidth, int vHeight) {
+        blitF(guiGraphics, texture, x, y, uOffset, vOffset, uWidth, vHeight, 1.0f);
+    }
+
+    public static void blitF(GuiGraphics guiGraphics, Identifier texture, float x, float y, int uOffset, int vOffset, int uWidth, int vHeight, float alpha) {
+        Matrix3x2fStack pose = guiGraphics.pose();
+        pose.pushMatrix();
+        pose.translate(x, y);
+        int argb = ARGB.color((int)(alpha * 255), 255, 255, 255);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, uOffset, vOffset, uWidth, vHeight, 256, 256, argb);
+        pose.popMatrix();
     }
 
     public static void fillF(GuiGraphics guiGraphics, float pMinX, float pMinY, float pMaxX, float pMaxY, float pZ, int pColor) {
-        Matrix4f matrix4f = guiGraphics.pose().last().pose();
-        if (pMinX < pMaxX) {
-            float temp = pMinX;
-            pMinX = pMaxX;
-            pMaxX = temp;
-        }
-
-        if (pMinY < pMaxY) {
-            float temp = pMinY;
-            pMinY = pMaxY;
-            pMaxY = temp;
-        }
-
-        float alpha =  FastColor.ARGB32.alpha(pColor) / 255.0F;
-        float red = FastColor.ARGB32.red(pColor) / 255.0F;
-        float green = FastColor.ARGB32.green(pColor) / 255.0F;
-        float blue = FastColor.ARGB32.blue(pColor) / 255.0F;
-        VertexConsumer vertexconsumer = guiGraphics.bufferSource().getBuffer(RenderType.gui());
-        vertexconsumer.vertex(matrix4f, pMinX, pMinY, pZ).color(red, green, blue, alpha).endVertex();
-        vertexconsumer.vertex(matrix4f, pMinX, pMaxY, pZ).color(red, green, blue, alpha).endVertex();
-        vertexconsumer.vertex(matrix4f, pMaxX, pMaxY, pZ).color(red, green, blue, alpha).endVertex();
-        vertexconsumer.vertex(matrix4f, pMaxX, pMinY, pZ).color(red, green, blue, alpha).endVertex();
-        guiGraphics.flush();
+        if (pMinX > pMaxX) { float t = pMinX; pMinX = pMaxX; pMaxX = t; }
+        if (pMinY > pMaxY) { float t = pMinY; pMinY = pMaxY; pMaxY = t; }
+        guiGraphics.fill((int) pMinX, (int) pMinY, (int) pMaxX, (int) pMaxY, pColor);
     }
 
-    public static void drawRotatedAround(PoseStack poseStack, float radians, float pivotX, float pivotY, Runnable runnable) {
-        poseStack.pushPose();
-        poseStack.rotateAround(Axis.ZN.rotation(radians), pivotX, pivotY, 0);
+    public static void drawRotatedAround(GuiGraphics guiGraphics, float radians, float pivotX, float pivotY, Runnable runnable) {
+        Matrix3x2fStack pose = guiGraphics.pose();
+        pose.pushMatrix();
+        pose.translate(pivotX, pivotY);
+        pose.rotate(radians);
+        pose.translate(-pivotX, -pivotY);
         runnable.run();
-        poseStack.popPose();
-    }
-
-    public static void drawWithAlpha(float alpha, Runnable runnable) {
-        RenderSystem.setShaderColor(1, 1, 1, alpha);
-        runnable.run();
-        RenderSystem.setShaderColor(1, 1, 1, 1);
+        pose.popMatrix();
     }
 
     public static void drawWithBlend(Runnable runnable) {
-        RenderSystem.enableBlend();
+        // GUI_TEXTURED pipeline handles blending by default in 1.21.11
         runnable.run();
-        RenderSystem.disableBlend();
     }
 
-    public static void drawWithShake(PoseStack poseStack, Shake shake, float partialTick, boolean doShake, Runnable runnable) {
+    public static void drawWithShake(GuiGraphics guiGraphics, Shake shake, float partialTick, boolean doShake, Runnable runnable) {
+        Matrix3x2fStack pose = guiGraphics.pose();
         if (doShake) {
-            poseStack.pushPose();
-            poseStack.translate(shake.getXOffset(partialTick), shake.getYOffset(partialTick), 0);
+            pose.pushMatrix();
+            pose.translate(shake.getXOffset(partialTick), shake.getYOffset(partialTick));
         }
-
         runnable.run();
-
         if (doShake) {
-            poseStack.popPose();
+            pose.popMatrix();
         }
     }
 }
